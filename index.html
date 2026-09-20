@@ -258,21 +258,31 @@
     <div id="toast">Сообщение</div>
 
     <script>
-const _A1='MTcy';const _A2='NzN2';const _A3='NzI=';
+
 function _getLock(){try{return JSON.parse(localStorage.getItem('nd_al_v1'))||{t:0,u:0};}catch(e){return{t:0,u:0};}}
 function _setLock(v){try{localStorage.setItem('nd_al_v1',JSON.stringify(v));}catch(e){}}
 function _rate(){const l=_getLock();const n=Date.now();if(l.u>n){const s=Math.ceil((l.u-n)/1000);return{ok:false,msg:'\uD83D\uDEAB \u0411\u043B\u043E\u043A! \u041F\u043E\u0434\u043E\u0436\u0434\u0438 '+s+' \u0441\u0435\u043A.'};}return{ok:true};}
 function _fail(){const l=_getLock();l.t=(l.t||0)+1;if(l.t>=3){l.u=Date.now()+60000;l.t=0;_setLock(l);return true;}_setLock(l);return false;}
 function _ok(){_setLock({t:0,u:0});}
-function checkAdm(p){
+var _cfg=null;
+var _cfgPromise=fetch('config.json').then(function(r){return r.json();}).then(function(d){_cfg=d;}).catch(function(e){});
+async function _sha256(str){
+  var buf=new TextEncoder().encode(str);
+  var h=await crypto.subtle.digest('SHA-256',buf);
+  return Array.from(new Uint8Array(h)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+}
+async function checkAdm(p){
   try{
-    const c=atob(_A1+_A2+_A3);
-    if(!p||p.length!==c.length) return false;
-    let d=0;
-    for(let i=0;i<p.length;i++) d|=p.charCodeAt(i)^c.charCodeAt(i);
+    if(!_cfg) await _cfgPromise;
+    if(!_cfg||!_cfg.h) return false;
+    var h=await _sha256(p);
+    if(h.length!==_cfg.h.length) return false;
+    var d=0;
+    for(var i=0;i<h.length;i++) d|=h.charCodeAt(i)^_cfg.h.charCodeAt(i);
     return d===0;
   }catch(e){return false;}
 }
+
 
         // === ЗАЩИТА ОТ ПРОСМОТРА КОДА (базовая обфускация) ===
         const _0x4f2a = ['\x35\x30\x30\x35\x32\x39\x31\x36']; // 50052916
@@ -704,20 +714,21 @@ function checkAdm(p){
         }
 
         // === АДМИН-ПАНЕЛЬ ===
-        function showAdminPanel(){
-            const r=_rate();
-            if(!r.ok){alert(r.msg);return;}
-            const pass=prompt('\u041F\u0430\u0440\u043E\u043B\u044C \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0430:');
-            if(pass===null) return;
-            if(checkAdm(pass)){
-                _ok();
-                document.getElementById('admin-panel').style.display='block';
-                if(typeof loadWithdrawals==='function') loadWithdrawals();
-            } else {
-                const locked=_fail();
-                if(locked) alert('\uD83D\uDEAB 3 \u043D\u0435\u0432\u0435\u0440\u043D\u044B\u0435 \u043F\u043E\u043F\u044B\u0442\u043A\u0438. \u0411\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u043A\u0430 \u043D\u0430 60 \u0441\u0435\u043A.');
-                else { const l=_getLock(); alert('\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C! \u041E\u0441\u0442\u0430\u043B\u043E\u0441\u044C: '+(3-(l.t||0))); }
-            }
+        async function showAdminPanel(){
+          var r=_rate();
+          if(!r.ok){alert(r.msg);return;}
+          var pass=prompt('\u041F\u0430\u0440\u043E\u043B\u044C \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0430:');
+          if(pass===null) return;
+          var ok=await checkAdm(pass);
+          if(ok){
+            _ok();
+            document.getElementById('admin-panel').style.display='block';
+            if(typeof loadWithdrawals==='function') loadWithdrawals();
+          } else {
+            var locked=_fail();
+            if(locked) alert('\uD83D\uDEAB 3 \u043D\u0435\u0432\u0435\u0440\u043D\u044B\u0435 \u043F\u043E\u043F\u044B\u0442\u043A\u0438. \u0411\u043B\u043E\u043A 60 \u0441\u0435\u043A.');
+            else { var l=_getLock(); alert('\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C! \u041E\u0441\u0442\u0430\u043B\u043E\u0441\u044C: '+(3-(l.t||0))); }
+          }
         }
 
         function closeAdminPanel() {
