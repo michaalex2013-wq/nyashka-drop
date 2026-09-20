@@ -242,10 +242,10 @@ body{background:var(--bg);color:#fff;min-height:100vh;overflow-x:hidden}
       </div>
       <div class="ucol">
         <h4>Шанс апгрейда</h4>
-        <div style="font-family:'Bebas Neue';font-size:3rem;color:var(--gold);margin:6px 0 10px;text-shadow:0 0 20px var(--glowGold)" id="upCh">60%</div>
-        <input type="range" class="slider" id="chSlider" min="60" max="95" value="60" oninput="updateCh()">
+        <div style="font-family:'Bebas Neue';font-size:3rem;color:var(--gold);margin:6px 0 10px;text-shadow:0 0 20px var(--glowGold)" id="upCh">70%</div>
+        <input type="range" class="slider" id="chSlider" min="1" max="70" value="70" oninput="updateCh()">
         <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-bottom:14px;padding:0 4px">
-          <span>60% (мин)</span><span>95% (макс)</span>
+          <span>1% (мин)</span><span>70% (макс)</span>
         </div>
         <div style="background:rgba(0,0,0,.35);border-radius:12px;padding:12px;margin-bottom:14px">
           <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)">
@@ -262,7 +262,7 @@ body{background:var(--bg);color:#fff;min-height:100vh;overflow-x:hidden}
           </div>
         </div>
         <button class="up-btn" id="upBtn" onclick="doUpgrade()" disabled>Крутить апгрейд</button>
-        <div style="font-size:.7rem;color:var(--muted);margin-top:10px;line-height:1.5">💡 Чем выше шанс — тем меньше множитель.<br>При 60% ты в плюсе на 20%.</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:10px;line-height:1.5">💡 Чем выше шанс — тем меньше множитель.<br>При 70% выигрыш +43%, при 1% — x100.</div>
       </div>
     </div>
 
@@ -567,7 +567,7 @@ $('upBtn').disabled=false;renderToSlot();
 function updateCh(){
 var c=+$('chSlider').value;
 $('upCh').textContent=c+'%';
-var mult=(100/c)*(c>=60?1.2:1);
+var mult=100/c;
 $('upMult').textContent='x'+mult.toFixed(2);
 if(fromItem){
   var profit=fromItem.item.p*mult-fromItem.item.p;
@@ -586,13 +586,13 @@ renderToSlot();
 function renderToSlot(){
 var s=$('toSlot');
 if(!fromItem){s.className='uslot';s.innerHTML='<div class="empty">🎯</div><div class="hint">Выбери предмет</div>';return}
-var c=+$('chSlider').value;var mult=(100/c)*(c>=60?1.2:1);var target=fromItem.item.p*mult;var preview=closest(target);
+var c=+$('chSlider').value;var mult=100/c;var target=fromItem.item.p*mult;var preview=closest(target);
 s.className='uslot filled';s.innerHTML='<div class="ico">'+preview.e+'</div><div class="nm">'+preview.n+'</div><div class="pr">⭐ '+fmt(preview.p)+'</div><div style="font-size:.65rem;color:#8a7fa8;margin-top:5px">Цель: '+fmt(target)+' ⭐</div>';
 }
 function doUpgrade(){
 if(!fromItem){toast('Выбери предмет!','err');return}
 var c=+$('chSlider').value,chance=c/100;
-var mult=(100/c)*(c>=60?1.2:1);var targetPrice=fromItem.item.p*mult;
+var mult=100/c;var targetPrice=fromItem.item.p*mult;
 me.inventory.splice(fromItem.idx,1);
 var win=Math.random()<chance;var got=win?closest(targetPrice):closest(fromItem.item.p*0.1);
 me.inventory.push(got);if(got.p>me.best)me.best=got.p;
