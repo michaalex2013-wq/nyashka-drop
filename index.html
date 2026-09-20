@@ -241,13 +241,28 @@ body{background:var(--bg);color:#fff;min-height:100vh;overflow-x:hidden}
         <div class="ucol"><h4>Результат</h4><div class="uslot" id="toSlot"><div class="empty">🎯</div><div class="hint">Выбери предмет</div></div></div>
       </div>
       <div class="ucol">
-        <input type="range" class="slider" id="chSlider" min="5" max="95" value="50" oninput="updateCh()">
-        <div class="uinfo">
-          <div><span class="k">Шанс: </span><span class="v" id="upCh">50%</span></div>
-          <div><span class="k">Множитель: </span><span class="v" id="upMult">x2.00</span></div>
-          <div><span class="k">Профит: </span><span class="v" id="upProfit">⭐ 0</span></div>
+        <h4>Шанс апгрейда</h4>
+        <div style="font-family:'Bebas Neue';font-size:3rem;color:var(--gold);margin:6px 0 10px;text-shadow:0 0 20px var(--glowGold)" id="upCh">60%</div>
+        <input type="range" class="slider" id="chSlider" min="60" max="95" value="60" oninput="updateCh()">
+        <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-bottom:14px;padding:0 4px">
+          <span>60% (мин)</span><span>95% (макс)</span>
         </div>
-        <button class="up-btn" id="upBtn" onclick="doUpgrade()" disabled>Апгрейд</button>
+        <div style="background:rgba(0,0,0,.35);border-radius:12px;padding:12px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+            <span style="color:var(--muted);font-size:.75rem">🎯 Множитель</span>
+            <span style="color:var(--gold);font-weight:900;font-size:.85rem" id="upMult">x1.67</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+            <span style="color:var(--muted);font-size:.75rem">💰 Профит</span>
+            <span style="color:var(--green);font-weight:900;font-size:.85rem" id="upProfit">+0 ⭐</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0">
+            <span style="color:var(--muted);font-size:.75rem">🎁 Итог</span>
+            <span style="color:#fff;font-weight:900;font-size:.85rem" id="upResult">—</span>
+          </div>
+        </div>
+        <button class="up-btn" id="upBtn" onclick="doUpgrade()" disabled>Крутить апгрейд</button>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:10px;line-height:1.5">💡 Чем выше шанс — тем меньше множитель.<br>При 60% ты в плюсе на 20%.</div>
       </div>
     </div>
 
@@ -490,8 +505,21 @@ for(var i=0;i<slices;i++){
 inner.innerHTML=html;
 }
 function spinWheel(){
+if(!me)return;
+var now=Date.now();
+var lastWheel=me.lastWheel||0;
+var day=86400000;
+if(now-lastWheel<day){
+  var left=day-(now-lastWheel);
+  var h=Math.floor(left/3600000);
+  var m=Math.floor((left%3600000)/60000);
+  toast('Колесо раз в день! Осталось: '+h+'ч '+m+'м','err');
+  return;
+}
 if(me.stars<0.10){toast('Нужно минимум ⭐ 0.10','err');return}
-me.stars-=0.10;saveMe();refresh();
+me.stars-=0.10;
+me.lastWheel=now;
+saveMe();refresh();
 $('spinBtn').disabled=true;$('spinBtn').textContent='Крутим...';
 var idx=ri(0,WHEEL_CASES.length-1);
 var angle=360*5+(360-(idx*30+15));
@@ -539,22 +567,32 @@ $('upBtn').disabled=false;renderToSlot();
 function updateCh(){
 var c=+$('chSlider').value;
 $('upCh').textContent=c+'%';
-var mult=(100/c)*(c>=65?1.25:1);
+var mult=(100/c)*(c>=60?1.2:1);
 $('upMult').textContent='x'+mult.toFixed(2);
-if(fromItem){var profit=fromItem.item.p*mult-fromItem.item.p;$('upProfit').textContent=(profit>=0?'+':'')+fmt(profit)+' ⭐';$('upProfit').style.color=profit>=0?'#10b981':'#ef4444'}
-else{$('upProfit').textContent='⭐ 0';$('upProfit').style.color='#fbbf24'}
+if(fromItem){
+  var profit=fromItem.item.p*mult-fromItem.item.p;
+  $('upProfit').textContent=(profit>=0?'+':'')+fmt(profit)+' ⭐';
+  $('upProfit').style.color=profit>=0?'#10b981':'#ef4444';
+  var target=fromItem.item.p*mult;
+  var preview=closest(target);
+  $('upResult').textContent=preview.n+' (⭐'+fmt(preview.p)+')';
+} else {
+  $('upProfit').textContent='+0 ⭐';
+  $('upProfit').style.color='#10b981';
+  $('upResult').textContent='—';
+}
 renderToSlot();
 }
 function renderToSlot(){
 var s=$('toSlot');
 if(!fromItem){s.className='uslot';s.innerHTML='<div class="empty">🎯</div><div class="hint">Выбери предмет</div>';return}
-var c=+$('chSlider').value;var mult=(100/c)*(c>=65?1.25:1);var target=fromItem.item.p*mult;var preview=closest(target);
+var c=+$('chSlider').value;var mult=(100/c)*(c>=60?1.2:1);var target=fromItem.item.p*mult;var preview=closest(target);
 s.className='uslot filled';s.innerHTML='<div class="ico">'+preview.e+'</div><div class="nm">'+preview.n+'</div><div class="pr">⭐ '+fmt(preview.p)+'</div><div style="font-size:.65rem;color:#8a7fa8;margin-top:5px">Цель: '+fmt(target)+' ⭐</div>';
 }
 function doUpgrade(){
 if(!fromItem){toast('Выбери предмет!','err');return}
 var c=+$('chSlider').value,chance=c/100;
-var mult=(100/c)*(c>=65?1.25:1);var targetPrice=fromItem.item.p*mult;
+var mult=(100/c)*(c>=60?1.2:1);var targetPrice=fromItem.item.p*mult;
 me.inventory.splice(fromItem.idx,1);
 var win=Math.random()<chance;var got=win?closest(targetPrice):closest(fromItem.item.p*0.1);
 me.inventory.push(got);if(got.p>me.best)me.best=got.p;
@@ -619,7 +657,14 @@ if(t==='tools')$('admTools').style.display='block';
 function admRenderUsers(){
 var q=($('admSearch').value||'').toLowerCase();
 var arr=Object.values(users).filter(function(u){return u.username.toLowerCase().indexOf(q)>=0});
-$('admUsersList').innerHTML=arr.length?arr.map(function(u){return '<div class="arow"><div class="w">@'+u.username+' '+(u.banned?'🚫':'')+'</div><div class="v">⭐ '+fmt(u.stars)+'</div></div>'}).join(''):'<div style="text-align:center;color:#8a7fa8;padding:10px;font-size:.78rem">Пусто</div>';
+if(!arr.length){
+  $('admUsersList').innerHTML='<div style="text-align:center;color:#8a7fa8;padding:10px;font-size:.78rem">Пока никого нет</div>';
+  return;
+}
+$('admUsersList').innerHTML=arr.map(function(u){
+  var items=(u.inventory||[]).length;
+  return '<div class="arow" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><div class="w">@'+u.username+' '+(u.banned?'🚫':'')+'</div><div class="v">⭐ '+fmt(u.stars)+'</div></div><div style="display:flex;justify-content:space-between;font-size:.65rem;color:#8a7fa8"><span>🎁 Кейсов: '+(u.opened||0)+'</span><span>🎒 Предметов: '+items+'</span></div></div>';
+}).join('');
 }
 function admRenderReqs(){
 var w=wds.filter(function(x){return x.status==='pending'}),d=deps.filter(function(x){return x.status==='pending'});
